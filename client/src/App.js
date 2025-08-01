@@ -211,25 +211,56 @@ function App() {
   };
 
   const analyzeMessage = async () => {
-    if (!message.trim()) return;
-    
-    setIsAnalyzing(true);
-    
-    // Simulate analysis delay
-    setTimeout(() => {
-      const detectedFlags = checkRedFlags(message);
-      const ruleScore = Math.min(detectedFlags.length * 20, 100);
-      const aiScoreValue = simulateAIAnalysis(message, detectedFlags);
-      const combined = Math.min(Math.max(ruleScore, aiScoreValue), 100);
-      
-      setRedFlags(detectedFlags);
-      setBaseScamScore(ruleScore);
-      setAiScore(aiScoreValue);
-      setCombinedScore(combined);
-      setResult(generateAIResponse(message, detectedFlags, aiScoreValue));
-      setIsAnalyzing(false);
-    }, 1500);
-  };
+  if (!message.trim()) return;
+  setIsAnalyzing(true);
+
+  try {
+    const detectedFlags = checkRedFlags(message);
+    const ruleScore = Math.min(detectedFlags.length * 20, 100);
+    setBaseScamScore(ruleScore);
+
+    const prompt = `
+You are a cybersecurity AI trained to detect scam messages across all formats including emails, SMS, and DMs.
+
+Your task:
+1. Analyze the message below and identify manipulative, fraudulent, or suspicious content.
+2. Return the response in the following format:
+Scam Score: [0-100]
+Explanation: [your reasoning]
+Advice: [guidance for the user]
+
+Message: "${message}"
+    `;
+
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: prompt }),
+    });
+
+    const data = await response.json();
+    const reply = data.message?.content || "";
+
+    let scamScore = 0;
+    let explanation = "";
+
+    const lines = reply.split("\n");
+    const scoreLine = lines.find((line) => line.toLowerCase().includes("scam score"));
+    scamScore = parseInt(scoreLine?.match(/\d+/)?.[0] || "0");
+    explanation = lines.slice(1).join("\n");
+
+    setAiScore(scamScore);
+    setCombinedScore(Math.round((ruleScore + scamScore) / 2));
+    setRedFlags(detectedFlags);
+    setResult(explanation || "No explanation provided.");
+  } catch (error) {
+    console.error("AI Error:", error.message);
+    setResult("Error contacting AI service.");
+  }
+
+  setIsAnalyzing(false);
+};
+
 
   const getScoreColor = (score) => {
     if (score < 30) return "text-emerald-400";
