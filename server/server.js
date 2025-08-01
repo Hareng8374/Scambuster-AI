@@ -18,7 +18,7 @@ const openai = new OpenAI({
 });
 
 // 🧠 Analyze route
-app.post("/analyze", async (req, res) => {
+  app.post("/api/analyze", async (req, res) => {
   const { prompt } = req.body;
   if (!prompt) return res.status(400).json({ error: "Prompt is required." });
 
@@ -31,7 +31,7 @@ app.post("/analyze", async (req, res) => {
     const reply = response.choices[0].message.content;
     res.json({ message: { content: reply } });
   } catch (err) {
-    console.error("❌ OpenAI error:", err.message);
+    console.error("❌ OpenAI error:", err.response?.data || err.message || err);
     res.status(500).json({ error: "Failed to analyze message." });
   }
 });

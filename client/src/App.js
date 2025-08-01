@@ -79,7 +79,7 @@ Based on language, intent, and context:
 `;
 
     try {
-  const response = await axios.post("/analyze", { message });
+  const response = await axios.post("/api/analyze", { prompt });
   const { score, redFlags, explanation } = response.data;
 
   setAiScore(score);
