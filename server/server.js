@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require("openai");
 const path = require("path");
 
 dotenv.config();
@@ -12,16 +12,14 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// OpenAI Setup
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+// 🔐 OpenAI Setup
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
 
-// Scam detection route
+// 🧠 Analyze route
 app.post("/api/analyze", async (req, res) => {
   const { message } = req.body;
-
   if (!message) return res.status(400).json({ error: "Message is required." });
 
   const prompt = `
@@ -36,28 +34,28 @@ Message: """${message}"""
 `;
 
   try {
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
     });
 
-    const result = response.data.choices[0].message.content;
+    const result = response.choices[0].message.content;
     const parsed = JSON.parse(result);
     res.json(parsed);
   } catch (err) {
-    console.error("OpenAI error:", err.message);
+    console.error("❌ OpenAI error:", err.message);
     res.status(500).json({ error: "Failed to analyze message." });
   }
 });
 
-// 👉 Serve React frontend in production
+// 🌐 Serve React in production
 app.use(express.static(path.join(__dirname, "../client/build")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build", "index.html"));
 });
 
-// Start server
+// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`✅ ScamBuster server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
