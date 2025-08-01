@@ -1,5 +1,21 @@
 import React, { useState } from "react";
 
+// Import Tesseract.js from CDN
+const loadTesseract = () => {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) {
+      resolve(window.Tesseract);
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
+    script.onload = () => resolve(window.Tesseract);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
 // Mock circular progress bar component since we don't have the library
 const CircularProgressbar = ({ value, text, styles }) => {
   const radius = 50;
@@ -163,54 +179,29 @@ function App() {
     setIsAnalyzing(true);
     
     try {
-      // Create a canvas to process the image
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+      // Load Tesseract.js
+      const Tesseract = await loadTesseract();
       
-      img.onload = async () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        
-        // Try to use browser's OCR capabilities if available
-        if ('ml' in window && 'createTextDetector' in window.ml) {
-          try {
-            const detector = await window.ml.createTextDetector();
-            const results = await detector.detect(canvas);
-            let extractedText = '';
-            results.forEach(result => {
-              extractedText += result.rawValue + ' ';
-            });
-            setMessage(extractedText.trim() || "Could not extract text from image. Please type the message manually.");
-          } catch (error) {
-            console.log('Browser OCR not available, using fallback');
-            setMessage("OCR processing unavailable. Please type the message manually in the text area below.");
-          }
-        } else {
-          // Fallback message when OCR is not available
-          setMessage("OCR processing unavailable in this browser. Please type the suspicious message manually in the text area below.");
-        }
-        setIsAnalyzing(false);
-      };
+      // Process the image with Tesseract OCR
+      const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+        logger: m => console.log(m) // Optional: log progress
+      });
       
-      img.onerror = () => {
-        setMessage("Error processing image. Please try again or type the message manually.");
-        setIsAnalyzing(false);
-      };
+      // Clean up the extracted text
+      const cleanedText = text.trim().replace(/\s+/g, ' ');
       
-      // Convert file to data URL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
+      if (cleanedText && cleanedText.length > 5) {
+        setMessage(cleanedText);
+      } else {
+        setMessage("Could not extract clear text from image. Please type the message manually in the text area below.");
+      }
       
     } catch (error) {
-      console.error('Image processing error:', error);
-      setMessage("Error processing image. Please type the message manually in the text area below.");
-      setIsAnalyzing(false);
+      console.error('OCR Error:', error);
+      setMessage("OCR processing failed. Please type the suspicious message manually in the text area below.");
     }
+    
+    setIsAnalyzing(false);
   };
 
   const analyzeMessage = async () => {
@@ -347,7 +338,7 @@ function App() {
                           <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-4 border-cyan-400/20"></div>
                         </div>
                         <span className="text-cyan-400 font-semibold text-lg">Processing image...</span>
-                        <span className="text-slate-400 text-sm mt-1">Extracting text with OCR</span>
+                        <span className="text-slate-400 text-sm mt-1">Using Tesseract OCR engine</span>
                       </div>
                     ) : (
                       <>
@@ -358,7 +349,7 @@ function App() {
                         </div>
                         <p className="text-white font-semibold text-lg mb-2">Drop your screenshot here</p>
                         <p className="text-slate-400">or click to browse • PNG, JPG, GIF up to 10MB</p>
-                        <p className="text-slate-500 text-xs mt-2">Note: OCR works best with clear, high-contrast text</p>
+                        <p className="text-slate-500 text-xs mt-2">Real OCR powered by Tesseract.js</p>
                       </>
                     )}
                   </div>
