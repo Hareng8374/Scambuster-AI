@@ -14,7 +14,7 @@ const CircularProgressbar = ({ value, text, styles }) => {
       <svg
         height={radius * 2}
         width={radius * 2}
-        className="transform -rotate-90 absolute inset-0 mx-auto"
+        className="transform -rotate-90 mx-auto"
         viewBox={`0 0 ${radius * 2} ${radius * 2}`}
       >
         <circle
@@ -162,9 +162,9 @@ function App() {
     setImage(file);
     setIsAnalyzing(true);
     
-    // Simulate OCR processing with IRS tax refund message
+    // Simulate OCR processing with the exact message from the image
     setTimeout(() => {
-      setMessage("IRS NOTIFICATION: You have an unclaimed tax refund of $2,847. Verify your identity to claim this refund immediately. Click here to verify: https://bit.ly/irs-refund-claim. This offer expires in 48 hours. Act now!");
+      setMessage("Your IRS tax refund is pending acceptance. Must accept within 24 hours: http://bit.ly/sdfsdf.");
       setIsAnalyzing(false);
     }, 2000);
   };
@@ -376,16 +376,18 @@ function App() {
               <div className={`bg-gradient-to-br ${getScoreBgGradient(combinedScore)} backdrop-blur-2xl rounded-3xl border border-white/20 p-8 shadow-2xl hover:scale-[1.02] transition-all duration-500`}>
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold text-white mb-6">Risk Assessment</h3>
-                  <div className="flex justify-center mb-6">
+                  <div className="flex justify-center mb-6 mt-4">
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
-                      <CircularProgressbar
-                        value={combinedScore}
-                        text={`${combinedScore}%`}
-                        styles={{
-                          pathColor: getProgressColor(combinedScore)
-                        }}
-                      />
+                      <div className="relative">
+                        <CircularProgressbar
+                          value={combinedScore}
+                          text={`${combinedScore}%`}
+                          styles={{
+                            pathColor: getProgressColor(combinedScore)
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className={`text-4xl font-black ${getScoreColor(combinedScore)} mb-3 tracking-wide`}>
@@ -513,7 +515,7 @@ function App() {
           <div className="text-center mt-12">
             <button
               onClick={() => {
-                setMessage("IRS NOTIFICATION: You have an unclaimed tax refund of $2,847. Verify your identity to claim this refund immediately. Click here to verify: https://bit.ly/irs-refund-claim. This offer expires in 48 hours. Act now!");
+                setMessage("Your IRS tax refund is pending acceptance. Must accept within 24 hours: http://bit.ly/sdfsdf.");
                 setTimeout(() => {
                   analyzeMessage();
                 }, 100);
