@@ -18,20 +18,9 @@ const openai = new OpenAI({
 });
 
 // 🧠 Analyze route
-app.post("/api/analyze", async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: "Message is required." });
-
-  const prompt = `
-You are an AI scam detector. Analyze the following message for signs of a scam. Return a scam score (0-100), red flags, and a short explanation. Only return JSON format like:
-{
-  "score": 85,
-  "redFlags": ["Too good to be true", "Unprofessional language"],
-  "explanation": "The message promises unrealistic earnings and uses vague, scam-like language."
-}
-
-Message: """${message}"""
-`;
+app.post("/analyze", async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: "Prompt is required." });
 
   try {
     const response = await openai.chat.completions.create({
@@ -39,9 +28,8 @@ Message: """${message}"""
       messages: [{ role: "user", content: prompt }],
     });
 
-    const result = response.choices[0].message.content;
-    const parsed = JSON.parse(result);
-    res.json(parsed);
+    const reply = response.choices[0].message.content;
+    res.json({ message: { content: reply } });
   } catch (err) {
     console.error("❌ OpenAI error:", err.message);
     res.status(500).json({ error: "Failed to analyze message." });
