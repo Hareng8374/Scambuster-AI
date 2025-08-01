@@ -2,19 +2,20 @@ import React, { useState } from "react";
 
 // Mock circular progress bar component since we don't have the library
 const CircularProgressbar = ({ value, text, styles }) => {
-  const radius = 45;
-  const strokeWidth = 8;
+  const radius = 50;
+  const strokeWidth = 6;
   const normalizedRadius = radius - strokeWidth * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDasharray = `${circumference} ${circumference}`;
   const strokeDashoffset = circumference - (value / 100) * circumference;
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-40 h-40 mx-auto">
       <svg
         height={radius * 2}
         width={radius * 2}
-        className="transform -rotate-90"
+        className="transform -rotate-90 absolute inset-0 mx-auto"
+        viewBox={`0 0 ${radius * 2} ${radius * 2}`}
       >
         <circle
           stroke="rgba(255,255,255,0.1)"
@@ -35,11 +36,11 @@ const CircularProgressbar = ({ value, text, styles }) => {
           r={normalizedRadius}
           cx={radius}
           cy={radius}
-          className="transition-all duration-1000 ease-out"
+          className="transition-all duration-2000 ease-out"
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-white font-bold text-lg">{text}</span>
+        <span className="text-white font-bold text-xl">{text}</span>
       </div>
     </div>
   );
@@ -161,9 +162,9 @@ function App() {
     setImage(file);
     setIsAnalyzing(true);
     
-    // Simulate OCR processing
+    // Simulate OCR processing with IRS tax refund message
     setTimeout(() => {
-      setMessage("URGENT: Your account will be suspended in 24 hours. Click here to verify: https://bit.ly/verify-now");
+      setMessage("IRS NOTIFICATION: You have an unclaimed tax refund of $2,847. Verify your identity to claim this refund immediately. Click here to verify: https://bit.ly/irs-refund-claim. This offer expires in 48 hours. Act now!");
       setIsAnalyzing(false);
     }, 2000);
   };
@@ -375,9 +376,9 @@ function App() {
               <div className={`bg-gradient-to-br ${getScoreBgGradient(combinedScore)} backdrop-blur-2xl rounded-3xl border border-white/20 p-8 shadow-2xl hover:scale-[1.02] transition-all duration-500`}>
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold text-white mb-6">Risk Assessment</h3>
-                  <div className="w-40 mx-auto mb-6 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
+                  <div className="flex justify-center mb-6">
                     <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
                       <CircularProgressbar
                         value={combinedScore}
                         text={`${combinedScore}%`}
@@ -512,7 +513,7 @@ function App() {
           <div className="text-center mt-12">
             <button
               onClick={() => {
-                setMessage("URGENT: Your PayPal account has been suspended due to suspicious activity. Click here to verify your account immediately: https://bit.ly/paypal-verify-now. This link expires in 24 hours. Act now to avoid permanent suspension!");
+                setMessage("IRS NOTIFICATION: You have an unclaimed tax refund of $2,847. Verify your identity to claim this refund immediately. Click here to verify: https://bit.ly/irs-refund-claim. This offer expires in 48 hours. Act now!");
                 setTimeout(() => {
                   analyzeMessage();
                 }, 100);
