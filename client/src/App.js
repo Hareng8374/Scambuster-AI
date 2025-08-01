@@ -88,6 +88,10 @@ function App() {
     { phrase: "limited time", label: "Time pressure" },
     { phrase: "confirm", label: "Verification scam" },
     { phrase: "update", label: "Account maintenance scam" },
+    { phrase: "office 365", label: "Brand impersonation (Microsoft)" },
+    { phrase: "microsoft", label: "Brand impersonation (Microsoft)" },
+    { phrase: "email-records.com", label: "Suspicious sender domain" },
+
   ];
 
   const checkRedFlags = (text) => {
@@ -189,6 +193,8 @@ function App() {
       
       // Clean up the extracted text
       const cleanedText = text.trim().replace(/\s+/g, ' ');
+      console.log("🧠 OCR Extracted Text:", cleanedText);
+
       
       if (cleanedText && cleanedText.length > 5) {
         setMessage(cleanedText);
@@ -575,3 +581,4 @@ function App() {
 }
 
 export default App;
+
