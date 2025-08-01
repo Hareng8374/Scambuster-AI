@@ -2,7 +2,7 @@
   "name": "scam-buster-ai",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:10000",
+  "proxy": "https://scambuster-ai.onrender.com",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
