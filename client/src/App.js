@@ -162,11 +162,55 @@ function App() {
     setImage(file);
     setIsAnalyzing(true);
     
-    // Simulate OCR processing with the exact message from the image
-    setTimeout(() => {
-      setMessage("Your IRS tax refund is pending acceptance. Must accept within 24 hours: http://bit.ly/sdfsdf.");
+    try {
+      // Create a canvas to process the image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        // Try to use browser's OCR capabilities if available
+        if ('ml' in window && 'createTextDetector' in window.ml) {
+          try {
+            const detector = await window.ml.createTextDetector();
+            const results = await detector.detect(canvas);
+            let extractedText = '';
+            results.forEach(result => {
+              extractedText += result.rawValue + ' ';
+            });
+            setMessage(extractedText.trim() || "Could not extract text from image. Please type the message manually.");
+          } catch (error) {
+            console.log('Browser OCR not available, using fallback');
+            setMessage("OCR processing unavailable. Please type the message manually in the text area below.");
+          }
+        } else {
+          // Fallback message when OCR is not available
+          setMessage("OCR processing unavailable in this browser. Please type the suspicious message manually in the text area below.");
+        }
+        setIsAnalyzing(false);
+      };
+      
+      img.onerror = () => {
+        setMessage("Error processing image. Please try again or type the message manually.");
+        setIsAnalyzing(false);
+      };
+      
+      // Convert file to data URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('Image processing error:', error);
+      setMessage("Error processing image. Please type the message manually in the text area below.");
       setIsAnalyzing(false);
-    }, 2000);
+    }
   };
 
   const analyzeMessage = async () => {
@@ -314,6 +358,7 @@ function App() {
                         </div>
                         <p className="text-white font-semibold text-lg mb-2">Drop your screenshot here</p>
                         <p className="text-slate-400">or click to browse • PNG, JPG, GIF up to 10MB</p>
+                        <p className="text-slate-500 text-xs mt-2">Note: OCR works best with clear, high-contrast text</p>
                       </>
                     )}
                   </div>
@@ -524,7 +569,13 @@ function App() {
             >
               Try Demo Message
             </button>
-            <p className="text-slate-400 text-sm mt-2">Click to test with a sample scam message</p>
+            <p className="text-slate-400 text-sm mt-2">Click to test with the IRS scam example</p>
+            
+            <div className="mt-4">
+              <p className="text-slate-400 text-xs text-center">
+                💡 Tip: For best results, type suspicious messages manually in the text area above
+              </p>
+            </div>
           </div>
         )}
       </div>
