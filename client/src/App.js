@@ -210,7 +210,7 @@ function App() {
     setIsAnalyzing(false);
   };
 
-  const analyzeMessage = async () => {
+ const analyzeMessage = async () => {
   if (!message.trim()) return;
   setIsAnalyzing(true);
 
@@ -220,16 +220,37 @@ function App() {
     setBaseScamScore(ruleScore);
 
     const prompt = `
-You are a cybersecurity AI trained to detect scam messages across all formats including emails, SMS, and DMs.
+You are ScamBuster AI, a highly intelligent cybersecurity assistant trained to detect phishing, fraud, and scam messages across text messages, emails, and screenshots. Use expert-level reasoning to assess the scam risk of the following message:
 
-Your task:
-1. Analyze the message below and identify manipulative, fraudulent, or suspicious content.
-2. Return the response in the following format:
+Message:
+"${message}"
+
+Contextual Awareness:
+- The IRS, banks, government agencies, and tech companies (like Microsoft, PayPal, Amazon) NEVER ask for personal info or login verification via SMS or short links.
+- Legitimate services do NOT use urgency like “act now” or “click to verify” via bit.ly or suspicious domains.
+- Scams often exploit:
+  • Impersonation (official-sounding names or logos)
+  • Urgency/Threats (“account suspended”, “expires soon”)
+  • Enticement (“free money”, “you’ve been selected”)
+  • Suspicious domains (e.g. email-records.com)
+  • Typos, inconsistent grammar, all caps, aggressive tone
+  • Financial bait (e.g. "$500 gift card", "crypto rewards")
+
+Instructions:
+Analyze the message and respond in the EXACT format:
+
 Scam Score: [0-100]
-Explanation: [your reasoning]
-Advice: [guidance for the user]
+Explanation: [Smart explanation of why it's suspicious or not]
+Advice: [Clear guidance — ignore, block, report, or okay to trust]
 
-Message: "${message}"
+Guidelines:
+- If the message impersonates IRS, PayPal, or uses urgency, score 80+.
+- If multiple red flags exist, escalate to 90–100.
+- If the message is suspicious but unclear, use 40–70.
+- If safe and professional, use 0–20.
+- Always be cautious and favor higher scores for ambiguity.
+
+Only return the result in the format above.
     `;
 
     const response = await fetch("/api/analyze", {
@@ -247,10 +268,10 @@ Message: "${message}"
     const lines = reply.split("\n");
     const scoreLine = lines.find((line) => line.toLowerCase().includes("scam score"));
     scamScore = parseInt(scoreLine?.match(/\d+/)?.[0] || "0");
-    explanation = lines.slice(1).join("\n");
+    explanation = lines.slice(1).join("\n").trim();
 
     setAiScore(scamScore);
-    setCombinedScore(Math.round((ruleScore + scamScore) / 2));
+    setCombinedScore(Math.round((scamScore * 0.75) + (ruleScore * 0.25)));
     setRedFlags(detectedFlags);
     setResult(explanation || "No explanation provided.");
   } catch (error) {
