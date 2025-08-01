@@ -79,17 +79,18 @@ Based on language, intent, and context:
 `;
 
     try {
-  const response = await axios.post("/api/analyze", { prompt });
-  const { score, redFlags, explanation } = response.data;
+  const response = await axios.post("/api/analyze", { message });
 
+  const { score, redFlags, explanation } = response.data;
   setAiScore(score);
   setCombinedScore(score);
-  setRedFlags(redFlags);
-  setResult(explanation);
+  setRedFlags(redFlags || []);
+  setResult(explanation || "No explanation provided.");
 } catch (err) {
-  console.error(err);
+  console.error("Frontend error:", err.message);
   setResult("Error contacting AI service. Please try again.");
 }
+
 setIsAnalyzing(false);
 
   };
