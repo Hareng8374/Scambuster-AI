@@ -79,32 +79,19 @@ Based on language, intent, and context:
 `;
 
     try {
-      const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+  const response = await axios.post("/analyze", { message });
+  const { score, redFlags, explanation } = response.data;
 
-      const reply = response.data.choices[0].message.content;
-      const match = reply.match(/scam likelihood:\s*(\d+)%/i);
-      const score = match ? parseInt(match[1]) : 50;
-      setAiScore(score);
-      // Use AI score as the final source of truth (from your updated code)
-      setCombinedScore(score);
-      setResult(reply);
-    } catch (err) {
-      console.error(err);
-      setResult("Error contacting AI service. Please try again.");
-    }
-    setIsAnalyzing(false);
+  setAiScore(score);
+  setCombinedScore(score);
+  setRedFlags(redFlags);
+  setResult(explanation);
+} catch (err) {
+  console.error(err);
+  setResult("Error contacting AI service. Please try again.");
+}
+setIsAnalyzing(false);
+
   };
 
   const getScoreColor = (score) => {
