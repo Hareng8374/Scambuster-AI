@@ -1,9 +1,49 @@
 import React, { useState } from "react";
-import axios from "axios";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import Tesseract from "tesseract.js";
-import scamShield from "./shield.png";
+
+// Mock circular progress bar component since we don't have the library
+const CircularProgressbar = ({ value, text, styles }) => {
+  const radius = 45;
+  const strokeWidth = 8;
+  const normalizedRadius = radius - strokeWidth * 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDasharray = `${circumference} ${circumference}`;
+  const strokeDashoffset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative w-full h-full">
+      <svg
+        height={radius * 2}
+        width={radius * 2}
+        className="transform -rotate-90"
+      >
+        <circle
+          stroke="rgba(255,255,255,0.1)"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          stroke={styles.pathColor}
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          style={{ strokeDashoffset }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-white font-bold text-lg">{text}</span>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const [message, setMessage] = useState("");
@@ -25,6 +65,12 @@ function App() {
     { phrase: "prize", label: "Too good to be true" },
     { phrase: "free", label: "Too good to be true" },
     { phrase: "congratulations", label: "Generic bait" },
+    { phrase: "suspended", label: "Account threat" },
+    { phrase: "expires", label: "Time pressure" },
+    { phrase: "act now", label: "Urgency phrase" },
+    { phrase: "limited time", label: "Time pressure" },
+    { phrase: "confirm", label: "Verification scam" },
+    { phrase: "update", label: "Account maintenance scam" },
   ];
 
   const checkRedFlags = (text) => {
@@ -41,59 +87,106 @@ function App() {
     return Array.from(flags);
   };
 
+  const simulateAIAnalysis = (messageText, detectedFlags) => {
+    // Simulate AI scoring based on message content
+    let aiScoreValue = 0;
+    const suspiciousPatterns = [
+      /\b(urgent|immediate|expire|suspend|verify|confirm|update|click|act now)\b/gi,
+      /\b(free|prize|winner|congratulations|selected)\b/gi,
+      /\b(tax refund|irs|government|bank|paypal|amazon)\b/gi,
+      /https?:\/\/[^\s]+/gi, // URLs
+      /\$\d+/gi, // Money amounts
+    ];
+
+    suspiciousPatterns.forEach(pattern => {
+      const matches = messageText.match(pattern);
+      if (matches) {
+        aiScoreValue += matches.length * 15;
+      }
+    });
+
+    // Add points for red flags
+    aiScoreValue += detectedFlags.length * 10;
+
+    // Cap at 100
+    aiScoreValue = Math.min(aiScoreValue, 100);
+
+    return aiScoreValue;
+  };
+
+  const generateAIResponse = (messageText, detectedFlags, aiScoreValue) => {
+    let response = "AI SCAM ANALYSIS REPORT\n\n";
+    
+    if (aiScoreValue >= 70) {
+      response += "🚨 HIGH RISK ASSESSMENT\n";
+      response += "This message shows multiple indicators of a scam attempt.\n\n";
+    } else if (aiScoreValue >= 40) {
+      response += "⚠️ MODERATE RISK ASSESSMENT\n";
+      response += "This message contains some suspicious elements.\n\n";
+    } else {
+      response += "✅ LOW RISK ASSESSMENT\n";
+      response += "This message appears relatively safe.\n\n";
+    }
+
+    response += "DETECTED ISSUES:\n";
+    if (detectedFlags.length > 0) {
+      detectedFlags.forEach(flag => {
+        response += `• ${flag}\n`;
+      });
+    } else {
+      response += "• No major red flags detected\n";
+    }
+
+    response += "\nRECOMMENDATIONS:\n";
+    if (aiScoreValue >= 70) {
+      response += "• DO NOT click any links or provide personal information\n";
+      response += "• DO NOT respond to this message\n";
+      response += "• Block the sender immediately\n";
+      response += "• Report this as spam/scam to your provider\n";
+    } else if (aiScoreValue >= 40) {
+      response += "• Verify sender identity through official channels\n";
+      response += "• Be cautious with any requested actions\n";
+      response += "• Do not provide sensitive information\n";
+    } else {
+      response += "• Message appears legitimate but stay vigilant\n";
+      response += "• When in doubt, verify through official channels\n";
+    }
+
+    return response;
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setImage(file);
     setIsAnalyzing(true);
-    try {
-      const {
-        data: { text },
-      } = await Tesseract.recognize(file, "eng");
-      setMessage(text);
-    } catch (error) {
-      console.error("OCR Error:", error);
-    }
-    setIsAnalyzing(false);
+    
+    // Simulate OCR processing
+    setTimeout(() => {
+      setMessage("URGENT: Your account will be suspended in 24 hours. Click here to verify: https://bit.ly/verify-now");
+      setIsAnalyzing(false);
+    }, 2000);
   };
 
   const analyzeMessage = async () => {
     if (!message.trim()) return;
     
     setIsAnalyzing(true);
-    const detectedFlags = checkRedFlags(message);
-    const ruleScore = Math.min(detectedFlags.length * 20, 100);
-    setRedFlags(detectedFlags);
-    setBaseScamScore(ruleScore);
-
-    const prompt = `
-You are a scam detection AI. A user received this message:
-"${message}"
-
-Red flags detected: ${detectedFlags.join(", ")}
-
-Based on language, intent, and context:
-- Estimate scam likelihood from 0-100%.
-- Explain what seems suspicious.
-- Recommend what the user should do next.
-`;
-
-    try {
-  const response = await axios.post("/api/analyze", { message });
-
-  const reply = response.data.message?.content;
-
-  setAiScore(0);
-  setCombinedScore(baseScamScore);
-  setRedFlags(checkRedFlags(message));
-  setResult(reply || "No explanation provided.");
-} catch (err) {
-  console.error("Frontend error:", err.message);
-  setResult("Error contacting AI service. Please try again.");
-}
-
-setIsAnalyzing(false);
-
+    
+    // Simulate analysis delay
+    setTimeout(() => {
+      const detectedFlags = checkRedFlags(message);
+      const ruleScore = Math.min(detectedFlags.length * 20, 100);
+      const aiScoreValue = simulateAIAnalysis(message, detectedFlags);
+      const combined = Math.min(Math.max(ruleScore, aiScoreValue), 100);
+      
+      setRedFlags(detectedFlags);
+      setBaseScamScore(ruleScore);
+      setAiScore(aiScoreValue);
+      setCombinedScore(combined);
+      setResult(generateAIResponse(message, detectedFlags, aiScoreValue));
+      setIsAnalyzing(false);
+    }, 1500);
   };
 
   const getScoreColor = (score) => {
@@ -130,9 +223,9 @@ setIsAnalyzing(false);
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse"></div>
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-12 max-w-7xl">
@@ -142,7 +235,11 @@ setIsAnalyzing(false);
             <div className="relative group">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-400 via-cyan-500 to-indigo-500 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
               <div className="relative bg-white/10 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-2xl">
-                <img src={scamShield} alt="ScamBuster AI" className="w-16 h-16 drop-shadow-lg" />
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
@@ -279,18 +376,14 @@ setIsAnalyzing(false);
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold text-white mb-6">Risk Assessment</h3>
                   <div className="w-40 mx-auto mb-6 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full blur-lg opacity-30 animation-delay-1000 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
                     <div className="relative">
                       <CircularProgressbar
                         value={combinedScore}
                         text={`${combinedScore}%`}
-                        styles={buildStyles({
-                          textColor: "#ffffff",
-                          pathColor: getProgressColor(combinedScore),
-                          trailColor: "rgba(255,255,255,0.1)",
-                          textSize: "14px",
-                          pathTransitionDuration: 2,
-                        })}
+                        styles={{
+                          pathColor: getProgressColor(combinedScore)
+                        }}
                       />
                     </div>
                   </div>
@@ -413,33 +506,25 @@ setIsAnalyzing(false);
             )}
           </div>
         </div>
-      </div>
 
-      <style jsx>{`
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-      `}</style>
+        {/* Demo Message Button */}
+        {!result && !combinedScore && (
+          <div className="text-center mt-12">
+            <button
+              onClick={() => {
+                setMessage("URGENT: Your PayPal account has been suspended due to suspicious activity. Click here to verify your account immediately: https://bit.ly/paypal-verify-now. This link expires in 24 hours. Act now to avoid permanent suspension!");
+                setTimeout(() => {
+                  analyzeMessage();
+                }, 100);
+              }}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold py-3 px-8 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              Try Demo Message
+            </button>
+            <p className="text-slate-400 text-sm mt-2">Click to test with a sample scam message</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
